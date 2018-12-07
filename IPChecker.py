@@ -40,6 +40,9 @@ def check_changed_ip(iface, path_to_ifacefile):
     else:
         open(path_to_ifacefile, 'w').write(ip)
         return False
+    
+def send_mail_for_changed_ip(destination, new_ip):
+    return True
 
 def get_interface_info():
     interfaces = ni.interfaces()
@@ -57,7 +60,7 @@ if __name__ == '__main__':
     write_pidfile_or_die('/tmp/IPChecker.pid')
     time.sleep(5)
     path_to_ifacefile = '/tmp/IPChecker.oldip'
-    iface = 'en0'
+    iface = 'wlan0'
     check_interval = 5
     print(get_host_ip(iface))
     # print('process {0} finished work!'.format(os.getpid()))
