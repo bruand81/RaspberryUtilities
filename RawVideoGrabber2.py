@@ -25,38 +25,44 @@ class RawVideoGrabber:
         self.h = opts["MaxHeight"]
 
         if opts["OutputFormat"] == 'video':
-            return self.grab_as_video(dest_dir=dest_dir, opts=opts)
+            return self.grab_as_video(dest_dir=dest_dir, opts=opts, numvideos=opts['NumVideos'])
         elif opts["OutputFormat"] == 'image':
             return self.grab_as_image(dest_dir=dest_dir, opts=opts)
         else:
             raise ValueError("Value \"%s\" not recognized for OutputFormat\n\t Admitted value are: video or image")
 
-    def grab_as_video(self, dest_dir, opts):
+    def grab_as_video(self, dest_dir, opts, numvideos=1):
         video_format = opts["VideoFormat"]
         # video_output = os.path.join(dest_dir, opts["OutputVideoFilename"])
-        image_output_template = os.path.join(dest_dir, opts["OutputImageFilename"])
+        image_output_template = os.path.join(dest_dir, opts["OutputVideoFilename"])
         self.fps = opts["MaxFramerate"]
         self.numFrames = self.fps * opts["NumSecs"]
         self.numDigits = math.ceil(math.log10(self.numFrames))
-        # frame_num_expansion = "%s"
+        frame_num_expansion = "%d"
 
-        with picamera.PiCamera(camera_num=opts["CameraIndex"]) as camera:
-            camera.resolution = (self.w, self.h)
-            camera.start_preview()
-            time.sleep(2)
-            # camera.capture(video_output, video_format)
-            start_time = time.time()
-            j = 0
-            try:
-                for i, filename in enumerate(camera.capture_continuous(image_output_template,format=video_format)):
-                    j=i
-                    if i == self.numFrames:
-                        break
-            finally:
-                end_time = time.time()
-                time_taken = end_time - start_time
-                print("Saved %d frames in %d seconds" % (j, time_taken))
-                print("Effective average fps: %d" % (j / time_taken))
+        for idx in range(0, numvideos):
+            print("\n********************************")
+            print("***** Registering video %d *****" % idx)
+            print("********************************\n")
+            fname = image_output_template.format(frame_num_expansion % (idx+1))
+            with picamera.PiCamera(camera_num=opts["CameraIndex"]) as camera:
+                camera.resolution = (self.w, self.h)
+                camera.start_preview()
+                time.sleep(2)
+                # camera.capture(video_output, video_format)
+                start_time = time.time()
+                j = 0
+                try:
+                    for i, filename in enumerate(camera.capture_continuous(fname, format=video_format)):
+                        j = i
+                        if i == self.numFrames:
+                            break
+                finally:
+                    end_time = time.time()
+                    time_taken = end_time - start_time
+                    print("Saved %d frames in %d seconds" % (j, time_taken))
+                    print("Effective average fps: %d" % (j / time_taken))
+                    camera.stop_preview()
 
         return
 
@@ -145,5 +151,6 @@ if __name__ == '__main__':
     options["OutputVideoFilename"] = config['DEFAULT']['OutputVideoFilename']
     options["OutputImageFilename"] = config['DEFAULT']['OutputImageFilename']
     options["UseThread"] = bool(int(config['DEFAULT']['UseThread']))
+    options["NumVideos"] = int(config['DEFAULT']['NumVideos'])
     grabber = RawVideoGrabber()
     grabber.grab(options)
